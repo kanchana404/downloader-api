@@ -292,6 +292,10 @@ SUPPORTED: Final[dict[str, PlatformSpec]] = {
         name="Snapchat",
         patterns=_rx(
             SUB + r"snapchat\.com/spotlight/[\w-]+",
+            # What the address bar actually gives you: snapchat.com/@user/spotlight/{id}.
+            # Reported 2026-08-21 — deleting "@user/" by hand made the same link work,
+            # which is not a thing anyone should have to discover.
+            SUB + r"snapchat\.com/@[\w.\-]+/spotlight/[\w-]+",
             SUB + r"snapchat\.com/p/[\w-]+/[\w-]+",
             SUB + r"snapchat\.com/add/[\w.\-]+/[\w-]+",
             SUB + r"snapchat\.com/u/[\w.\-]+/[\w-]+",
