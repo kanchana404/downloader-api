@@ -109,7 +109,15 @@ async def proxy_for(platform: str) -> str | None:
     if level != "none" and url is None:
         # Configured to escalate but nothing to escalate to. Say so loudly once
         # per request rather than failing mysteriously with the same 403s.
-        log.warning("proxy.level_unconfigured", platform=platform, level=level)
+        #
+        # The field is `ladder_level`, not `level`. `LoggerAdapter.warning(msg,
+        # **kwargs)` forwards to `log(WARNING, msg, **kwargs)`, so a `level=`
+        # kwarg binds twice and raises TypeError before any of our logging code
+        # runs. This line — written to prevent a mysterious failure — WAS one:
+        # it raised inside `proxy_for`, the TypeError escaped `resolve`, and
+        # YouTube sat degraded for 426 consecutive canary runs. `msg` collides
+        # the same way; nothing else does.
+        log.warning("proxy.level_unconfigured", platform=platform, ladder_level=level)
     return url
 
 
@@ -139,7 +147,8 @@ async def escalate(platform: str) -> None:
         # next block does not inflate it forever, and let the canary mark the
         # platform degraded instead - there is nothing left to buy.
         await redis.hset(key, mapping={"fails": ESCALATE_AFTER})
-        log.warning("proxy.escalation_exhausted", platform=platform, level=level)
+        # `ladder_level`, not `level` — see proxy_for above.
+        log.warning("proxy.escalation_exhausted", platform=platform, ladder_level=level)
         return
 
     new_level = LEVELS[idx + 1]
